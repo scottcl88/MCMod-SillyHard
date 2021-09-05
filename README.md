@@ -1,1 +1,0 @@
-# MCMod-SillyHard
