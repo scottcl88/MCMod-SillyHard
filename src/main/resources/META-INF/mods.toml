@@ -34,9 +34,9 @@ authors="Scott Lewis" #optional
 description='''
 A simple mod intended to make Minecraft Hardcore more difficult with the following changes:
 
--Removes all structures except stronghold
+-Removes all structures except stronghold and nether fortress
 -Prevents villagers from spawning
--Increases some monster spawn rates
+-Increases Endermen, Zombie and Skeleton spawn rates
 -Prevents mobs mounting to boats
 '''
 # A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.

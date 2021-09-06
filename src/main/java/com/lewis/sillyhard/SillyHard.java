@@ -15,6 +15,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.biome.MobSpawnSettings.SpawnerData;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.feature.ConfiguredStructureFeature;
+import net.minecraft.world.level.levelgen.feature.NetherFortressFeature;
 import net.minecraft.world.level.levelgen.feature.StrongholdFeature;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.LootTables;
@@ -43,7 +44,6 @@ public class SillyHard {
 		MinecraftForge.EVENT_BUS.addListener(EventPriority.LOWEST, this::entityJoinWorld);
 		
 		MinecraftForge.EVENT_BUS.addListener(this::biomeModification);
-		MinecraftForge.EVENT_BUS.addListener(this::lootModifier);
 
 		MinecraftForge.EVENT_BUS.addListener(this::entityModifier);
 
@@ -52,29 +52,53 @@ public class SillyHard {
 	}
 
 	public void biomeModification(final BiomeLoadingEvent event) {
-		int strongholdIndex = -1;
 		Supplier<ConfiguredStructureFeature<?, ?>> strongholdFeature = null;
+		Supplier<ConfiguredStructureFeature<?, ?>> fortressFeature = null;
 		List<Supplier<ConfiguredStructureFeature<?, ?>>> structList = event.getGeneration().getStructures();
 		for (int i = 0; i < structList.size(); i++) {
 			String featureName = structList.get(i).get().feature.getFeatureName();
 			if (featureName.equals(StrongholdFeature.STRONGHOLD.getFeatureName())) {
 				strongholdFeature = structList.get(i);
 			}
+			if (featureName.equals(NetherFortressFeature.NETHER_BRIDGE.getFeatureName())) {
+				fortressFeature = structList.get(i);
+			}
 		}
+		event.getGeneration().getStructures().clear();
 		if (strongholdFeature != null) {
-			event.getGeneration().getStructures().clear();
 			event.getGeneration().getStructures().add(strongholdFeature);
+		}
+		if (fortressFeature != null) {
+			event.getGeneration().getStructures().add(fortressFeature);
 		}
 
 		List<SpawnerData> spawns = event.getSpawns().getSpawner(MobCategory.MONSTER);
-
-		// Remove existing spawn information
+		int endermanWeight = 0;
+		int zombieWeight = 0;
+		int skeletonWeight = 0;
+		for (int i = 0; i < spawns.size(); i++) {
+			if(spawns.get(i).type == EntityType.ENDERMAN) {
+				endermanWeight = Math.round((float)(spawns.get(i).getWeight().asInt() * 1.5));
+				LOGGER.info("biomeModification endermanWeight: "+endermanWeight);
+			}
+			if(spawns.get(i).type == EntityType.ZOMBIE) {
+				zombieWeight = spawns.get(i).getWeight().asInt() * 4;
+//				LOGGER.info("biomeModification 2: "+spawns.get(i).getWeight()+" | "+spawns.get(i).maxCount+" | "+spawns.get(i).minCount);
+			}
+			if(spawns.get(i).type == EntityType.SKELETON) {
+				skeletonWeight = spawns.get(i).getWeight().asInt() * 2;
+//				LOGGER.info("biomeModification 4: "+spawns.get(i).getWeight()+" | "+spawns.get(i).maxCount+" | "+spawns.get(i).minCount);
+			}
+		}
+		// Remove existing spawn information		
 		spawns.removeIf(e -> e.type == EntityType.ENDERMAN);
 		spawns.removeIf(e -> e.type == EntityType.ZOMBIE);
+		spawns.removeIf(e -> e.type == EntityType.SKELETON);
 
 		// Make spawns more frequent in all biomes
-		spawns.add(new SpawnerData(EntityType.ENDERMAN, 200, 1, 4));
-		spawns.add(new SpawnerData(EntityType.ZOMBIE, 400, 1, 4));
+		spawns.add(new SpawnerData(EntityType.ENDERMAN, endermanWeight, 1, 4));
+		spawns.add(new SpawnerData(EntityType.ZOMBIE, zombieWeight, 1, 4));
+		spawns.add(new SpawnerData(EntityType.SKELETON, skeletonWeight, 1, 4));
 	}
 
 	public void entityModifier(final EntityMountEvent event) {
@@ -85,17 +109,6 @@ public class SillyHard {
 				event.setCanceled(true);
 			}
 			return;
-		}
-	}
-
-	public void lootModifier(final LootTableLoadEvent event) {
-		LootTable table = event.getTable();
-//    	LOGGER.info("lootModifier 1: "+event.getTable().getLootTableId());
-		String tableId = event.getTable().getLootTableId().getPath();
-//    	LOGGER.info("lootModifier 2: "+tableId);
-		if (tableId.equals("chests/woodland_mansion")) {
-			LOGGER.info("lootModifier 3: " + table.getParamSet());
-			LootTables manager = event.getLootTableManager();
 		}
 	}
 
